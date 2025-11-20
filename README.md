@@ -79,7 +79,6 @@ cd proyecto-packer
 
 ### Paso 2: Crear todos los archivos del proyecto
 
-Copia los archivos proporcionados:
 - `packer-template.pkr.hcl`
 - `nginx.conf`
 - `app/server.js`
@@ -212,17 +211,9 @@ Una vez desplegada, accede a la aplicación en tu navegador:
 http://[IP_PUBLICA]
 ```
 
-La aplicación mostrará:
-- Estado del servidor
-- Información del sistema
-- Versión de Node.js
-- Uptime y memoria
-
 ### Endpoints disponibles:
 
 - `GET /` - Página principal
-- `GET /api/info` - Información del sistema en JSON
-- `GET /health` - Health check
 
 ### Conectarse por SSH:
 
@@ -322,19 +313,6 @@ Este proyecto está diseñado para la **capa gratuita de AWS**:
 - **Tráfico de red**: 1 GB salida gratis/mes
 
 **⚠️ Importante**: Recuerda eliminar los recursos cuando termines para evitar cargos.
-
-## 🐛 Solución de Problemas
-
-### Error: "No default VPC"
-
-```bash
-# Crear una VPC por defecto
-aws ec2 create-default-vpc
-```
-
-### Error: "Insufficient capacity"
-
-Cambia la región en el template o intenta más tarde.
 
 ### La instancia no responde en el puerto 80
 
