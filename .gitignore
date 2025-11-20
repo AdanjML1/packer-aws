@@ -1,0 +1,45 @@
+# Archivos sensibles - NUNCA subir a GitHub
+
+# Claves privadas SSH/Key Pairs
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Credenciales de AWS
+.aws/
+*.credentials
+*.config
+~/.aws/
+
+# Manifest de Packer (contiene IDs de AMI)
+manifest.json
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Archivos temporales
+*.tmp
+*.log
+*.swp
+*.swo
+*~
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Archivos de backup
+*.bak
+*.backup
+
+# Archivos de Packer
+*.pkr.hcl.bak
+packer_cache/
+
