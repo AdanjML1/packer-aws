@@ -14,13 +14,18 @@
 *.config
 ~/.aws/
 
-# Manifest de Packer (contiene IDs de AMI)
+# Manifest de Packer (contiene IDs de AMI/Imágenes)
 manifest.json
+manifest-azure.json
 
 # Variables de entorno
 .env
 .env.local
 .env.*.local
+
+# Archivos de variables con credenciales (contienen información sensible)
+variables-azure.pkrvars.hcl
+# variables.pkrvars.hcl  # Descomentar si contiene credenciales de AWS
 
 # Archivos temporales
 *.tmp

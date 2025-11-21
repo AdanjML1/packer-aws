@@ -1,4 +1,4 @@
-.PHONY: help init validate build deploy clean check-aws
+.PHONY: help init validate build deploy clean check-aws init-azure validate-azure build-azure deploy-azure clean-azure check-azure
 
 # Colores para output
 GREEN  := \033[0;32m
@@ -112,3 +112,48 @@ test-app: ## Prueba la aplicación localmente (requiere Node.js)
 	cd app && npm install && npm start
 
 all: init validate build deploy ## Ejecuta todo el pipeline completo
+
+# ============================================
+# Comandos para Azure
+# ============================================
+
+check-azure: ## Verifica la configuración de Azure
+	@echo "$(YELLOW)Verificando autenticación Azure...$(NC)"
+	@az account show
+	@echo "$(GREEN)✓ Autenticado en Azure$(NC)"
+
+init-azure: check-azure ## Inicializa Packer para Azure
+	@echo "$(YELLOW)Inicializando Packer para Azure...$(NC)"
+	packer init packer-template-azure.pkr.hcl
+	@echo "$(GREEN)✓ Packer inicializado$(NC)"
+
+validate-azure: ## Valida el template de Packer para Azure
+	@echo "$(YELLOW)Validando template de Azure...$(NC)"
+	packer validate packer-template-azure.pkr.hcl
+	@echo "$(GREEN)✓ Template válido$(NC)"
+
+build-azure: validate-azure ## Construye la imagen en Azure
+	@echo "$(YELLOW)Construyendo imagen en Azure...$(NC)"
+	packer build -var-file=variables-azure.pkrvars.hcl packer-template-azure.pkr.hcl
+	@echo "$(GREEN)✓ Imagen construida exitosamente$(NC)"
+
+deploy-azure: ## Ejecuta el despliegue completo en Azure
+	@echo "$(YELLOW)Iniciando despliegue automático en Azure...$(NC)"
+	@chmod +x deploy-azure.sh
+	./deploy-azure.sh
+
+clean-azure: ## Limpia todos los recursos de Azure
+	@echo "$(YELLOW)Limpiando recursos de Azure...$(NC)"
+	@chmod +x cleanup-azure.sh
+	./cleanup-azure.sh
+	@echo "$(GREEN)✓ Limpieza completada$(NC)"
+
+status-azure: ## Muestra el estado de las VMs en Azure
+	@echo "$(YELLOW)VMs activas en Azure:$(NC)"
+	@az vm list --resource-group packer-resources --show-details --query "[?powerState=='VM running'].[name,powerState,publicIps]" --output table
+
+images-azure: ## Lista las imágenes creadas en Azure
+	@echo "$(YELLOW)Imágenes disponibles en Azure:$(NC)"
+	@az image list --resource-group packer-resources --query "[?contains(name, 'nodejs-nginx-app')].[name,location,osState]" --output table
+
+all-azure: init-azure validate-azure build-azure deploy-azure ## Ejecuta todo el pipeline completo en Azure

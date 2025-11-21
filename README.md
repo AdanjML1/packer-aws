@@ -1,25 +1,37 @@
-# Despliegue de Node.js + Nginx con Packer en AWS
+# Despliegue de Node.js + Nginx con Packer (AWS y Azure)
 
-Proyecto completo para crear imágenes AMI automatizadas con Packer que incluyen una aplicación Node.js configurada con Nginx como proxy inverso.
+Proyecto completo para crear imágenes automatizadas con Packer que incluyen una aplicación Node.js configurada con Nginx como proxy inverso. Soporta **AWS** y **Azure**.
 
 ## 📋 Estructura del Proyecto
 
 ```
 proyecto-packer/
-├── packer-template.pkr.hcl    # Template principal de Packer
-├── nginx.conf                  # Configuración de Nginx
-├── deploy.sh                   # Script de despliegue automático
-├── cleanup.sh                  # Script de limpieza de recursos
+├── packer-template.pkr.hcl         # Template de Packer para AWS
+├── packer-template-azure.pkr.hcl   # Template de Packer para Azure
+├── nginx.conf                      # Configuración de Nginx
+├── deploy.sh                       # Script de despliegue automático (AWS)
+├── deploy-azure.sh                 # Script de despliegue automático (Azure)
+├── cleanup.sh                      # Script de limpieza de recursos (AWS)
+├── cleanup-azure.sh                # Script de limpieza de recursos (Azure)
+├── variables.pkrvars.hcl           # Variables de configuración (AWS)
+├── variables-azure.pkrvars.hcl     # Variables de configuración (Azure)
 ├── app/
-│   ├── server.js              # Aplicación Node.js
-│   └── package.json           # Dependencias de Node.js
-└── README.md                   # Este archivo
+│   ├── index.js                   # Aplicación Node.js
+│   └── package.json                # Dependencias de Node.js
+└── README.md                       # Este archivo
 ```
 
 ## 🚀 Requisitos Previos
 
+### Para AWS:
 1. **Cuenta de AWS** con acceso a la capa gratuita
 2. **AWS CLI** instalado y configurado
+3. **Packer** instalado (versión 1.9+)
+4. **jq** instalado (para parsear JSON)
+
+### Para Azure:
+1. **Cuenta de Azure** con suscripción activa
+2. **Azure CLI** instalado y configurado
 3. **Packer** instalado (versión 1.9+)
 4. **jq** instalado (para parsear JSON)
 
@@ -331,10 +343,154 @@ aws ec2 describe-security-groups --group-ids [SG_ID]
 PACKER_LOG=1 packer build packer-template.pkr.hcl
 ```
 
+## ☁️ Despliegue en Azure
+
+Este proyecto también soporta despliegue en **Microsoft Azure**. Sigue estos pasos:
+
+### Requisitos para Azure
+
+1. **Cuenta de Azure** con suscripción activa
+2. **Azure CLI** instalado y configurado
+3. **Packer** instalado (versión 1.9+)
+4. **jq** instalado (para parsear JSON)
+
+### Instalación de Azure CLI
+
+```bash
+# En Ubuntu/Debian
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+# Verificar instalación
+az --version
+```
+
+### Configuración Inicial de Azure
+
+1. **Autenticarse en Azure:**
+   ```bash
+   az login
+   ```
+
+2. **Obtener información de tu suscripción:**
+   ```bash
+   az account show
+   az account list --output table
+   ```
+
+3. **Configurar variables en `variables-azure.pkrvars.hcl`:**
+   
+   Necesitas crear una **Service Principal** en Azure:
+   ```bash
+   az ad sp create-for-rbac --name "packer-sp" --role contributor
+   ```
+   
+   Esto te dará:
+   - `appId` (client_id)
+   - `password` (client_secret)
+   - `tenant` (tenant_id)
+   - `subscription` (subscription_id)
+   
+   Edita `variables-azure.pkrvars.hcl` con estos valores.
+
+### Despliegue en Azure
+
+#### Opción 1: Script automático (recomendado)
+
+```bash
+# Configurar variables primero
+nano variables-azure.pkrvars.hcl
+
+# Ejecutar despliegue
+./deploy-azure.sh
+```
+
+#### Opción 2: Usando Makefile
+
+```bash
+# Verificar autenticación
+make check-azure
+
+# Inicializar Packer
+make init-azure
+
+# Validar template
+make validate-azure
+
+# Construir imagen
+make build-azure
+
+# Despliegue completo
+make deploy-azure
+
+# O todo en uno
+make all-azure
+```
+
+#### Opción 3: Pasos manuales
+
+```bash
+# 1. Inicializar Packer
+packer init packer-template-azure.pkr.hcl
+
+# 2. Validar template
+packer validate -var-file=variables-azure.pkrvars.hcl packer-template-azure.pkr.hcl
+
+# 3. Construir imagen
+packer build -var-file=variables-azure.pkrvars.hcl packer-template-azure.pkr.hcl
+
+# 4. Crear VM desde la imagen (el script deploy-azure.sh lo hace automáticamente)
+```
+
+### Limpieza de Recursos en Azure
+
+```bash
+# Script automático
+./cleanup-azure.sh
+
+# O usando Makefile
+make clean-azure
+
+# Eliminar Resource Group completo
+az group delete --name packer-resources --yes
+```
+
+### Verificar Estado en Azure
+
+```bash
+# Ver VMs activas
+make status-azure
+
+# Ver imágenes creadas
+make images-azure
+
+# O manualmente
+az vm list --resource-group packer-resources --output table
+az image list --resource-group packer-resources --output table
+```
+
+### Diferencias entre AWS y Azure
+
+| Característica | AWS | Azure |
+|---------------|-----|-------|
+| Imagen | AMI | Managed Image |
+| Instancia | EC2 Instance | Virtual Machine |
+| Security Group | Security Group | Network Security Group |
+| IP Pública | Elastic IP | Public IP Address |
+| Key Pair | EC2 Key Pair | SSH Keys (generadas) |
+
+### Costos en Azure
+
+- **Standard_B1s**: Incluido en la capa gratuita (750 horas/mes)
+- **Storage**: 5 GB gratis
+- **Tráfico de red**: 5 GB salida gratis/mes
+
+⚠️ **Importante**: Recuerda eliminar los recursos cuando termines para evitar cargos.
+
 ## 📚 Referencias
 
 - [Documentación de Packer](https://www.packer.io/docs)
 - [AWS CLI Reference](https://docs.aws.amazon.com/cli/)
+- [Azure CLI Reference](https://docs.microsoft.com/cli/azure/)
 - [Node.js Documentation](https://nodejs.org/docs/)
 - [Nginx Documentation](https://nginx.org/en/docs/)
 
@@ -342,7 +498,9 @@ PACKER_LOG=1 packer build packer-template.pkr.hcl
 
 ✅ Automatización de instrucciones con Packer  
 ✅ Template funcional para Node.js + Nginx  
-✅ Despliegue en AWS (capa gratuita)  
+✅ Despliegue en **AWS** (capa gratuita)  
+✅ Despliegue en **Azure** (capa gratuita)  
 ✅ Proceso completamente automático  
 ✅ Uso de IP pública  
-✅ Sin intervención manual requerida
+✅ Sin intervención manual requerida  
+✅ Soporte multi-cloud (AWS y Azure)
